@@ -1,6 +1,8 @@
 # TroveModConfigGenerator
 This project aims at automating the process of creation of mod configuration files by check which mods have UI (swf) files in them.
 
+### [Download Executable Here](https://github.com/Sly0511/TroveModConfigGenerator/releases/tag/Stable)
+
 ## Windows or browser is saying it's a virus
 Unfortunately windows is strict with what it wants to run.
 The exe file isn't signed with a certificate, so Windows will say it's a virus regardless, unless you have dev certificates in your machine.
