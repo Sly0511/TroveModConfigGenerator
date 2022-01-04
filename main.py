@@ -1,7 +1,7 @@
 import os
 import shutil
-import time
 import winreg
+from tqdm import tqdm
 
 # Registry Constants
 Hives = [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]
@@ -9,6 +9,14 @@ Nodes = ["WOW6432Node\\"]
 Path = "Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
 TroveKey = "Glyph Trove"
 TroveInstallValue = "InstallLocation"
+
+class Progress(tqdm):
+    def update_to(self, i, desc=None, total=None):
+        if total is not None:
+            self.total = total
+        if desc is not None:
+            self.desc = desc
+        self.update(i)
 
 def GetKeys(key, path, look_for):
     """
@@ -105,6 +113,23 @@ def ExtractMod(ModPath, ModDestination):
     """
     os.system(f'Trove.exe -tool extractmod -file "{ModPath}" -override -output "{ModDestination}"')
 
+def CheckModConfig(ModFile, ModPath):
+    ModName = ".".join(ModFile.split(".")[:-1])
+    ConfigFileName = os.path.join(ModCfgs, f"{ModName}.cfg")
+    ModDestination = os.path.join(ModCache, ModName)
+    if ModName in CheckedMods:
+        return
+    if os.path.isfile(ConfigFileName) and len(open(ConfigFileName, "r").read()):
+        return
+    CreateDirectory(ModDestination)
+    ExtractMod(ModPath, ModDestination)
+    SWFFiles = [File for File in GetAllFiles(ModDestination) if File.endswith(".swf")]
+    if SWFFiles:
+        with open(ConfigFileName, "w+") as ConfigFile:
+            ConfigFile.write("\n\n\n".join([f"[{SWFFile}]" for SWFFile in SWFFiles]))
+    CheckedMods.append(ModName)
+    return
+
 DirectoriesFound = []
 look_for = None
 print(
@@ -148,39 +173,20 @@ if not os.path.exists(ModCache):
     os.mkdir(ModCache)
 
 for Directory in DirectoriesFound:
-    os.chdir(Directory)
-    ModsFolder = os.path.join(Directory, "mods")
-    Mods = [(ModFile, os.path.join(ModsFolder, ModFile)) for ModFile in os.listdir(ModsFolder) if ModFile.endswith(".tmod")]
-    i = 0
-    for ModFile, ModPath in Mods:
-        try:
-            i += 1
-            ModName = ".".join(ModFile.split(".")[:-1])
-            print(f"Checking mod {i}/{len(Mods)} in {ModsFolder} >>> [{ModName}]")
-            if ModName in CheckedMods:
-                print(f" -> Skipped config (Already Checked) >>> {ModName}\n")
-                continue
-            ConfigFileName = os.path.join(ModCfgs, f"{ModName}.cfg")
-            if os.path.isfile(ConfigFileName) and len(open(ConfigFileName, "r").read()):
-                print(f" -> Skipped config (Already Exists) >>> {ModName}\n")
-                continue
-            ModDestination = os.path.join(ModCache, ModName)
-            CreateDirectory(ModDestination)
-            ExtractMod(ModPath, ModDestination)
-            SWFFiles = []
-            for File in GetAllFiles(ModDestination):
-                if File.endswith(".swf"):
-                    SWFFiles.append(File)
-            if SWFFiles:
-                with open(ConfigFileName, "w+") as ConfigFile:
-                    ConfigFile.write("\n\n\n".join([f"[{SWFFile}]" for SWFFile in SWFFiles]))
-                print(f" -> Created config >>> {ModName}\n")
-            else:
-                print(f" -> Skipped config (Doesn't contain UI files) >>> {ModName}\n")
-            CheckedMods.append(ModName)
-        except KeyboardInterrupt:
-            shutil.rmtree(ModCache)
-            exit()
+    print(f"\nGenerating mod configs for mods in:\n{Directory}")
+    with Progress() as ModsProgress:
+        os.chdir(Directory)
+        ModsFolder = os.path.join(Directory, "mods")
+        Mods = [(ModFile, os.path.join(ModsFolder, ModFile)) for ModFile in os.listdir(ModsFolder) if ModFile.endswith(".tmod")]
+        ModsProgress.update_to(0, total=len(Mods))
+        for ModFile, ModPath in Mods:
+            ModsProgress.update_to(0, desc=f"{ModFile:<64}")
+            try:
+                CheckModConfig(ModFile, ModPath)
+            except KeyboardInterrupt:
+                shutil.rmtree(ModCache)
+                exit()
+            ModsProgress.update_to(1)
 
 shutil.rmtree(ModCache)
 print("The mod configs were created successfully. You can now close this window.")
