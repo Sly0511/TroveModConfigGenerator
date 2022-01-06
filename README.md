@@ -1,7 +1,7 @@
 # TroveModConfigGenerator
 This project aims at automating the process of creation of mod configuration files by check which mods have UI (swf) files in them.
 
-### [Download Executable Here](https://github.com/Sly0511/TroveModConfigGenerator/releases/tag/Stable)
+### [Download Executable Here](https://github.com/Sly0511/TroveModConfigGenerator/releases/tag/1.1)
 
 ## Windows or browser is saying it's a virus
 Unfortunately windows is strict with what it wants to run.
