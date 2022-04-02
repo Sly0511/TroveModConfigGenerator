@@ -2,11 +2,12 @@ import os
 import shutil
 import winreg
 from tqdm import tqdm
+from pathlib import Path
 
 # Registry Constants
 Hives = [winreg.HKEY_LOCAL_MACHINE, winreg.HKEY_CURRENT_USER]
 Nodes = ["WOW6432Node\\"]
-Path = "Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
+TrovePath = "Microsoft\\Windows\\CurrentVersion\\Uninstall\\"
 TroveKey = "Glyph Trove"
 TroveInstallValue = "InstallLocation"
 
@@ -39,7 +40,7 @@ def SearchRegistry():
     for Hive in Hives:
         for Node in Nodes:
             try:
-                LookPath = "SOFTWARE\\"+Node+Path
+                LookPath = "SOFTWARE\\"+Node+TrovePath
                 RegistryKeyPath = winreg.OpenKeyEx(Hive, LookPath)
                 Keys = GetKeys(RegistryKeyPath, LookPath, TroveKey)
                 for Key in Keys:
@@ -52,25 +53,25 @@ def SanityCheck(Path, Registry=True):
     This checks if directories exist and are valid.
     Returns alerts when invalid directories are found.
     """
-    TroveExe = os.path.join(Path, "Trove.exe")
-    ModsFolder = os.path.join(Path, "mods")
-    if not os.path.exists(Path):
+    TroveExe = Path.joinpath("Trove.exe")
+    ModsFolder = Path.joinpath("mods")
+    if not Path.exists():
         if Registry:
-            print("Directory found in Registry but folder wasn't found:\n\t -> "+Path+"\n\n")
+            print("Directory found in Registry but folder wasn't found:\n\t -> "+Path.absolute()+"\n\n")
         else:
-            print("Directory wasn't found:\n\t -> "+Path+"\n\n")
+            print("Directory wasn't found:\n\t -> "+Path.absolute()+"\n\n")
         return False
-    if not os.path.exists(TroveExe):
+    if not TroveExe.exists():
         if Registry:
-            print("Directory found in Registry but 'Trove.exe' wasn't found:\n\t-> "+TroveExe+"\n\n")
+            print("Directory found in Registry but 'Trove.exe' wasn't found:\n\t-> "+TroveExe.absolute()+"\n\n")
         else:
-            print("Directory found but 'Trove.exe' wasn't found:\n\t -> "+TroveExe+"\n\n")
+            print("Directory found but 'Trove.exe' wasn't found:\n\t -> "+TroveExe.absolute()+"\n\n")
         return False
-    if not os.path.exists(ModsFolder):
+    if not ModsFolder.exists():
         if Registry:
-            print("Directory found in Registry but 'mods' folder wasn't found:\n\t-> "+ModsFolder+"\n\n")
+            print("Directory found in Registry but 'mods' folder wasn't found:\n\t-> "+ModsFolder.absolute()+"\n\n")
         else:
-            print("Directory found but 'mods' folder wasn't found:\n\t -> "+ModsFolder+"\n\n")
+            print("Directory found but 'mods' folder wasn't found:\n\t -> "+ModsFolder.absolute()+"\n\n")
         return False
     return True
 
@@ -83,15 +84,15 @@ def GetTroveLocations():
             GamePath = winreg.QueryValueEx(Key, TroveInstallValue)[0] # Extracts path out of value in Glyph keys
         except WindowsError:
             continue
-        if SanityCheck(GamePath):
-            yield GamePath
+        if SanityCheck(Path(GamePath)):
+            yield Path(GamePath)
 
-def CreateDirectory(Path, Warn=False):
+def CreateDirectory(Path: Path, Warn=False):
     """
     Creates a directory if it doesn't exist
     """
-    if not os.path.exists(Path):
-        os.mkdir(Path)
+    if Path.exists():
+        Path.mkdir()
         if Warn:
             print(f"Created necessary directory:\n\t-> '{Path}'")
 
@@ -99,9 +100,9 @@ def GetAllFiles(Folder):
     """
     Gets all files in a directory
     """
-    for File in os.listdir(Folder):
-        FilePath = os.path.join(Folder, File)
-        if os.path.isdir(FilePath):
+    for File in Folder.iterdir():
+        FilePath = Folder.joinpath(File)
+        if FilePath.is_dir():
             for i in GetAllFiles(FilePath):
                 yield i
         else:
@@ -111,19 +112,19 @@ def ExtractMod(ModPath, ModDestination):
     """
     Extracts a mod's contents
     """
-    os.system(f'Trove.exe -tool extractmod -file "{ModPath}" -override -output "{ModDestination}"')
+    os.system(f'Trove.exe -tool extractmod -file "{ModPath.absolute()}" -override -output "{ModDestination.absolute()}"')
 
-def CheckModConfig(ModFile, ModPath):
-    ModName = ".".join(ModFile.split(".")[:-1])
-    ConfigFileName = os.path.join(ModCfgs, f"{ModName}.cfg")
-    ModDestination = os.path.join(ModCache, ModName)
+def CheckModConfig(ModFile: Path, ModPath: Path):
+    ModName = ModFile.stem
+    ConfigFileName = ModCfgs.joinpath(f"{ModName}.cfg")
+    ModDestination = ModCache.joinpath(ModName)
     if ModName in CheckedMods:
         return
-    if os.path.isfile(ConfigFileName) and len(open(ConfigFileName, "r").read()):
+    if ConfigFileName.exists() and len(ConfigFileName.open("r").read()):
         return
     CreateDirectory(ModDestination)
     ExtractMod(ModPath, ModDestination)
-    SWFFiles = [File for File in GetAllFiles(ModDestination) if File.endswith(".swf")]
+    SWFFiles = [File for File in GetAllFiles(ModDestination) if File.suffix == ".swf"]
     if SWFFiles:
         with open(ConfigFileName, "w+") as ConfigFile:
             ConfigFile.write("\n\n\n".join([f"[{SWFFile}]" for SWFFile in SWFFiles]))
@@ -160,34 +161,34 @@ else:
     for Directory in DirectoriesFound:
         print(f"\t-> {Directory}\n")
 
-Appdata = os.getenv('APPDATA')
-AppdataTrove = os.path.join(Appdata, "Trove")
-ModCfgs = os.path.join(AppdataTrove, "ModCfgs")
+Appdata = Path(os.getenv('APPDATA'))
+AppdataTrove = Appdata.joinpath("Trove")
+ModCfgs = AppdataTrove.joinpath("ModCfgs")
 CreateDirectory(AppdataTrove, True)
 CreateDirectory(ModCfgs, True)
 
 CheckedMods = []
-CurrentDirectory = os.getcwd()
-ModCache = os.path.join(CurrentDirectory, "ModConfigsCache")
-if not os.path.exists(ModCache):
-    os.mkdir(ModCache)
+CurrentDirectory = Path(os.getcwd())
+ModCache = CurrentDirectory.joinpath("ModConfigsCache")
+if not ModCache.exists():
+    ModCache.mkdir()
 
 for Directory in DirectoriesFound:
     print(f"\nGenerating mod configs for mods in:\n{Directory}")
     with Progress() as ModsProgress:
         os.chdir(Directory)
-        ModsFolder = os.path.join(Directory, "mods")
-        Mods = [(ModFile, os.path.join(ModsFolder, ModFile)) for ModFile in os.listdir(ModsFolder) if ModFile.endswith(".tmod")]
+        ModsFolder = Directory.joinpath("mods")
+        Mods = [(ModFile, ModsFolder.joinpath(ModFile)) for ModFile in ModsFolder.iterdir() if ModFile.is_file() and ModFile.suffix == ".tmod"]
         ModsProgress.update_to(0, total=len(Mods))
         for ModFile, ModPath in Mods:
-            ModsProgress.update_to(0, desc=f"{ModFile:<64}")
+            ModsProgress.update_to(0, desc=f"{ModFile.name:<64}")
             try:
                 CheckModConfig(ModFile, ModPath)
             except KeyboardInterrupt:
-                shutil.rmtree(ModCache)
+                shutil.rmtree(ModCache.absolute())
                 exit()
             ModsProgress.update_to(1)
 
-shutil.rmtree(ModCache)
+shutil.rmtree(ModCache.absolute())
 print("The mod configs were created successfully. You can now close this window.")
 os.system("PAUSE")
