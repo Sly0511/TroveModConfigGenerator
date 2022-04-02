@@ -57,21 +57,21 @@ def SanityCheck(Path, Registry=True):
     ModsFolder = Path.joinpath("mods")
     if not Path.exists():
         if Registry:
-            print("Directory found in Registry but folder wasn't found:\n\t -> "+Path.absolute()+"\n\n")
+            print("Directory found in Registry but folder wasn't found:\n\t -> "+str(Path.absolute())+"\n\n")
         else:
-            print("Directory wasn't found:\n\t -> "+Path.absolute()+"\n\n")
+            print("Directory wasn't found:\n\t -> "+str(Path.absolute())+"\n\n")
         return False
     if not TroveExe.exists():
         if Registry:
-            print("Directory found in Registry but 'Trove.exe' wasn't found:\n\t-> "+TroveExe.absolute()+"\n\n")
+            print("Directory found in Registry but 'Trove.exe' wasn't found:\n\t-> "+str(TroveExe.absolute())+"\n\n")
         else:
-            print("Directory found but 'Trove.exe' wasn't found:\n\t -> "+TroveExe.absolute()+"\n\n")
+            print("Directory found but 'Trove.exe' wasn't found:\n\t -> "+str(TroveExe.absolute())+"\n\n")
         return False
     if not ModsFolder.exists():
         if Registry:
-            print("Directory found in Registry but 'mods' folder wasn't found:\n\t-> "+ModsFolder.absolute()+"\n\n")
+            print("Directory found in Registry but 'mods' folder wasn't found:\n\t-> "+str(ModsFolder.absolute())+"\n\n")
         else:
-            print("Directory found but 'mods' folder wasn't found:\n\t -> "+ModsFolder.absolute()+"\n\n")
+            print("Directory found but 'mods' folder wasn't found:\n\t -> "+str(ModsFolder.absolute())+"\n\n")
         return False
     return True
 
@@ -91,7 +91,7 @@ def CreateDirectory(Path: Path, Warn=False):
     """
     Creates a directory if it doesn't exist
     """
-    if Path.exists():
+    if not Path.exists():
         Path.mkdir()
         if Warn:
             print(f"Created necessary directory:\n\t-> '{Path}'")
@@ -114,7 +114,7 @@ def ExtractMod(ModPath, ModDestination):
     """
     os.system(f'Trove.exe -tool extractmod -file "{ModPath.absolute()}" -override -output "{ModDestination.absolute()}"')
 
-def CheckModConfig(ModFile: Path, ModPath: Path):
+def CheckModConfig(ModFile, ModPath: Path):
     ModName = ModFile.stem
     ConfigFileName = ModCfgs.joinpath(f"{ModName}.cfg")
     ModDestination = ModCache.joinpath(ModName)
@@ -127,7 +127,7 @@ def CheckModConfig(ModFile: Path, ModPath: Path):
     SWFFiles = [File for File in GetAllFiles(ModDestination) if File.suffix == ".swf"]
     if SWFFiles:
         with open(ConfigFileName, "w+") as ConfigFile:
-            ConfigFile.write("\n\n\n".join([f"[{SWFFile}]" for SWFFile in SWFFiles]))
+            ConfigFile.write("\n\n\n".join([f"[{SWFFile.name}]" for SWFFile in SWFFiles]))
     CheckedMods.append(ModName)
     return
 
@@ -152,7 +152,7 @@ if look_for:
 
 if not DirectoriesFound:
     while not DirectoriesFound:
-        Inserted = input("Please input a valid Trove directory:\n")
+        Inserted = Path(input("Please input a valid Trove directory:\n"))
         if SanityCheck(Inserted, False):
             DirectoriesFound.append(Inserted)
             break
@@ -185,10 +185,10 @@ for Directory in DirectoriesFound:
             try:
                 CheckModConfig(ModFile, ModPath)
             except KeyboardInterrupt:
-                shutil.rmtree(ModCache.absolute())
+                shutil.rmtree(ModCache)
                 exit()
             ModsProgress.update_to(1)
 
-shutil.rmtree(ModCache.absolute())
+shutil.rmtree(ModCache)
 print("The mod configs were created successfully. You can now close this window.")
 os.system("PAUSE")
