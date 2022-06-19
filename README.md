@@ -3,7 +3,7 @@ This project aims at automating the process of creation of mod configuration fil
 
 ### [Download Executable Here](https://github.com/Sly0511/TroveModConfigGenerator/releases/latest)
 
-## How to use
+## How to use (Click Image)
 
 [![Watch the video](https://i9.ytimg.com/vi/rV2mEuTqQ3Q/mq2.jpg?sqp=CKj1u5UG&rs=AOn4CLBmwhlFsSswYtZYW3Ya3u3rWEvqNg)](https://youtu.be/rV2mEuTqQ3Q)
 
