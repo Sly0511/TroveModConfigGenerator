@@ -356,7 +356,7 @@ class SlyTroveConfigGenerator(object):
         if ModName in self.CheckedMods:
             return self.Log(f"[{ModType}] Skipped mod (Already generated): " + ModName)
         if ConfigFileName.exists():
-            if self.comboBox.currentText == "Overwrite all files":
+            if self.comboBox.currentText() == "Overwrite all files":
                 self.Log(f"[{ModType}] Overwriting mod config: " + ModName)
             elif self.comboBox.currentText() == "Overwrite empty files" and len(ConfigFileName.read_text()) == 0:
                 self.Log(f"[{ModType}] Overwriting mod config (Config is empty): " + ModName)
