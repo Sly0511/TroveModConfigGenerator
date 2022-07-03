@@ -384,13 +384,13 @@ class SlyTroveConfigGenerator(object):
         Metadata["PropertyCount"] = reader.read_uint16()
         Metadata["Properties"] = {}
         for _ in range(Metadata["PropertyCount"]):
-            key = reader.read_str(reader.read_uint8()) 
-            value = reader.read_str(reader.read_uint8())
+            key = reader.read_str(ReadVarInt7Bit(reader, reader.pos())[0])
+            value = reader.read_str(ReadVarInt7Bit(reader, reader.pos())[0])
             if not isNullOrWhiteSpace(key) and not isNullOrWhiteSpace(value):
                 Metadata["Properties"][key] = value
         Metadata["Files"] = []
         while reader.pos() < Metadata["HeaderSize"]:
-            FileName = reader.read_str(reader.read_uint8())
+            FileName = reader.read_str(ReadVarInt7Bit(reader, reader.pos())[0])
             Metadata["FileIndex"] = ReadVarInt7Bit(reader, reader.pos())
             Metadata["FileOffset"] = ReadVarInt7Bit(reader, reader.pos())
             Metadata["FileSize"] = ReadVarInt7Bit(reader, reader.pos())
