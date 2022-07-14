@@ -311,7 +311,8 @@ class SlyTroveConfigGenerator(object):
                 continue
             ModName = f"{ModType}/{ModFile.name}"
             item = QtGui.QStandardItem(ModName)
-            model.appendRow(item)
+            model.appendRow(item)        
+        self.pushButton.setEnabled(True)
 
     def comboBoxChanged(self):
         if self.comboBox.currentText() == "Overwrite all files":
